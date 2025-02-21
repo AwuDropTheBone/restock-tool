@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>抄貨小工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/quaggajs@0.12.1/dist/quagga.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #main-layer, #input-layer { max-width: 500px; margin: auto; }
+        #input-layer { display: none; }
+        #scanner-container { width: 100%; max-width: 400px; }
+        video { width: 100%; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        button { padding: 10px; margin: 5px; }
+        input[type="number"] { width: 100px; padding: 5px; }
+        select { padding: 5px; }
+    </style>
+</head>
+<body>
+    <!-- 第一層：補貨列表 -->
+    <div id="main-layer">
+        <h1>當前補貨資料</h1>
+        <button onclick="switchToInput('add')">新增 (+)</button>
+        <button onclick="clearData()">全部清除</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>條碼</th>
+                    <th>品名</th>
+                    <th>數量</th>
+                    <th>單位</th>
+                </tr>
+            </thead>
+            <tbody id="restock-list"></tbody>
+        </table>
+    </div>
+
+    <!-- 第二層：輸入資料 -->
+    <div id="input-layer">
+        <h1>輸入補貨資料</h1>
+        <button onclick="startScanner()">掃描條碼</button>
+        <div id="scanner-container">
+            <video id="scanner"></video>
+        </div>
+        <p>條碼：<span id="barcode-result"></span></p>
+        <p>品名：<span id="product-name"></span></p>
+        <p>
+            數量：<input type="number" id="quantity" min="0" placeholder="輸入數量">
+            單位：<select id="unit">
+                <option value="瓶">瓶</option>
+                <option value="包">包</option>
+                <option value="箱">箱</option>
+            </select>
+        </p>
+        <button onclick="saveData()">確認</button>
+        <button onclick="switchToMain()">取消</button>
+    </div>
+
+    <script>
+        // 商品資料庫
+        const products = [
+            {"條碼": "4711271003909", "品名": "台鹽海洋鹼性離子水 1500ml"},
+            {"條碼": "4710018343902", "品名": "原萃綠茶-玉露 1250ml"},
+            {"條碼": "4710958920539", "品名": "生活運動飲料 400ml*6入"},
+            {"條碼": "4710079020118", "品名": "生活運動飲料 400ml"},
+            {"條碼": "4710088512550", "品名": "科學麵mini包"}
+        ];
+
+        // 轉成條碼查詢用的物件
+        const productMap = {};
+        products.forEach(p => {
+            productMap[p["條碼"]] = p["品名"];
+        });
+
+        let restockData = JSON.parse(localStorage.getItem('restockData')) || [];
+
+        // 初始化顯示補貨列表
+        updateRestockList();
+
+        function switchToInput() {
+            document.getElementById('main-layer').style.display = 'none';
+            document.getElementById('input-layer').style.display = 'block';
+            document.getElementById('barcode-result').innerText = '';
+            document.getElementById('product-name').innerText = '';
+            document.getElementById('quantity').value = '';
+        }
+
+        function switchToMain() {
+            document.getElementById('input-layer').style.display = 'none';
+            document.getElementById('main-layer').style.display = 'block';
+            Quagga.stop(); // 停止掃描
+        }
+
+        function startScanner() {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#scanner-container')
+                },
+                decoder: {
+                    readers: ["ean_reader", "upc_reader"] // 支援 EAN/UPC 條碼
+                }
+            }, function(err) {
+                if (err) {
+                    console.log(err);
+                    alert('無法啟動相機，請確認權限或瀏覽器支援');
+                    return;
+                }
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(data) {
+                const barcode = data.codeResult.code;
+                document.getElementById('barcode-result').innerText = barcode;
+                document.getElementById('product-name').innerText = productMap[barcode] || '未知商品';
+                Quagga.stop();
+            });
+        }
+
+        function saveData() {
+            const barcode = document.getElementById('barcode-result').innerText;
+            const name = document.getElementById('product-name').innerText;
+            const quantity = document.getElementById('quantity').value;
+            const unit = document.getElementById('unit').value;
+
+            if (barcode && quantity) {
+                restockData.push({ barcode, name, quantity, unit });
+                localStorage.setItem('restockData', JSON.stringify(restockData));
+                updateRestockList();
+                switchToMain();
+            } else {
+                alert('請掃描條碼並輸入數量！');
+            }
+        }
+
+        function updateRestockList() {
+            const tbody = document.getElementById('restock-list');
+            tbody.innerHTML = '';
+            restockData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.barcode}</td>
+                    <td>${item.name}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.unit}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function clearData() {
+            restockData = [];
+            localStorage.setItem('restockData', JSON.stringify(restockData));
+            updateRestockList();
+        }
+    </script>
+</body>
+</html>
