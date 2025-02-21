@@ -2,8 +2,8 @@
 <html>
 <head>
     <title>抄貨小工具</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- 適應手機解析度 -->
-    <script src="https://cdn.jsdelivr.net/npm/quaggajs@0.12.1/dist/quagga.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 2vw; }
         #main-layer, #input-layer { max-width: 90vw; margin: auto; }
@@ -12,11 +12,11 @@
         video { width: 100%; }
         table { width: 100%; border-collapse: collapse; margin-top: 2vh; }
         th, td { border: 1px solid #ddd; padding: 1vh 1vw; text-align: left; }
-        tr { height: 8vh; } /* 增加行高，避免誤觸 */
-        button { padding: 1.5vh 2vw; margin: 1vh; font-size: 3vw; } /* 按鈕大小隨螢幕調整 */
+        tr { height: 8vh; }
+        button { padding: 1.5vh 2vw; margin: 1vh; font-size: 3vw; }
         input[type="number"] { width: 20vw; padding: 1vh; font-size: 3vw; }
         select { padding: 1vh; font-size: 3vw; }
-        .delete-btn { background-color: #ff4444; color: white; padding: 0.5vh 1vw; } /* 刪除按鈕樣式 */
+        .delete-btn { background-color: #ff4444; color: white; padding: 0.5vh 1vw; }
     </style>
 </head>
 <body>
@@ -77,6 +77,7 @@
         });
 
         let restockData = JSON.parse(localStorage.getItem('restockData')) || [];
+        let codeReader = null; // ZXing 的掃描器實例
 
         // 初始化顯示補貨列表
         updateRestockList();
@@ -92,35 +93,26 @@
         function switchToMain() {
             document.getElementById('input-layer').style.display = 'none';
             document.getElementById('main-layer').style.display = 'block';
-            Quagga.stop(); // 停止掃描
+            if (codeReader) {
+                codeReader.reset(); // 停止掃描
+            }
         }
 
         function startScanner() {
-            console.log('按下了掃描條碼'); // 除錯用
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#scanner-container')
-                },
-                decoder: {
-                    readers: ["ean_reader", "upc_reader"]
+            console.log('按下了掃描條碼');
+            codeReader = new ZXing.BrowserMultiFormatReader();
+            codeReader.decodeFromVideoDevice(null, 'scanner', (result, err) => {
+                if (result) {
+                    const barcode = result.text;
+                    document.getElementById('barcode-result').innerText = barcode;
+                    document.getElementById('product-name').innerText = productMap[barcode] || '未知商品';
+                    codeReader.reset(); // 掃到後停止
                 }
-            }, function(err) {
-                if (err) {
-                    console.log(err);
-                    alert('啟動相機失敗: ' + err.message);
-                    return;
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    alert('掃描失敗: ' + err);
                 }
-                alert('相機啟動成功，請掃描條碼');
-                Quagga.start();
-            });
-
-            Quagga.onDetected(function(data) {
-                const barcode = data.codeResult.code;
-                document.getElementById('barcode-result').innerText = barcode;
-                document.getElementById('product-name').innerText = productMap[barcode] || '未知商品';
-                Quagga.stop();
+            }).catch(err => {
+                alert('啟動相機失敗: ' + err);
             });
         }
 
@@ -157,7 +149,7 @@
         }
 
         function deleteItem(index) {
-            restockData.splice(index, 1); // 移除指定索引的資料
+            restockData.splice(index, 1);
             localStorage.setItem('restockData', JSON.stringify(restockData));
             updateRestockList();
         }
