@@ -70,7 +70,7 @@
         <p>
             數量：<input type="number" id="quantity" min="0" placeholder="輸入數量">
             單位：<select id="unit">
-                <option value="瓶">瓶</option>
+                <option value="個">個</option>
                 <option value="包">包</option>
                 <option value="箱">箱</option>
             </select>
@@ -106,9 +106,9 @@
             document.getElementById('barcode-result').innerText = '';
             document.getElementById('product-name').innerText = '';
             document.getElementById('quantity').value = '';
-            document.getElementById('unit').value = '瓶';
-            document.getElementById('manual-barcode').value = ''; // 清空手動輸入
-            document.getElementById('manual-name').value = '';   // 清空手動名稱
+            document.getElementById('unit').value = '個'; // 預設單位改為「個」
+            document.getElementById('manual-barcode').value = '';
+            document.getElementById('manual-name').value = '';
         }
 
         function switchToMain() {
