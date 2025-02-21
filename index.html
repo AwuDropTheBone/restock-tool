@@ -13,14 +13,18 @@
         table { width: 100%; border-collapse: collapse; margin-top: 2vh; }
         th, td { border: 1px solid #ddd; padding: 1vh 1vw; text-align: left; }
         tr { height: 8vh; }
-        button { padding: 1.5vh 2vw; margin: 1vh; font-size: 3vw; }
-        input[type="number"] { width: 20vw; padding: 1vh; font-size: 3vw; }
+        button {
+            padding: 2vh 3vw; margin: 1vh; font-size: 4vw;
+            background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;
+        }
+        button:hover { background-color: #45a049; }
+        input[type="number"], input[type="text"] { width: 20vw; padding: 1vh; font-size: 3vw; }
         select { padding: 1vh; font-size: 3vw; }
-        .delete-btn { background-color: #ff4444; color: white; padding: 0.5vh 1vw; }
+        .delete-btn { background-color: #ff4444; padding: 1vh 2vw; }
+        .delete-btn:hover { background-color: #cc0000; }
     </style>
 </head>
 <body>
-    <!-- 第一層：補貨列表 -->
     <div id="main-layer">
         <h1>當前補貨資料</h1>
         <button onclick="switchToInput('add')">新增 (+)</button>
@@ -39,10 +43,11 @@
         </table>
     </div>
 
-    <!-- 第二層：輸入資料 -->
     <div id="input-layer">
         <h1>輸入補貨資料</h1>
         <button onclick="startScanner()">掃描條碼</button>
+        <p>或手動輸入：<input type="text" id="manual-barcode" placeholder="輸入條碼">
+        <button onclick="manualInput()">確認</button></p>
         <div id="scanner-container">
             <video id="scanner"></video>
         </div>
@@ -61,26 +66,25 @@
     </div>
 
     <script>
-        // 商品資料庫
-        const products = [
-            {"條碼": "4711271003909", "品名": "台鹽海洋鹼性離子水 1500ml"},
-            {"條碼": "4710018343902", "品名": "原萃綠茶-玉露 1250ml"},
-            {"條碼": "4710958920539", "品名": "生活運動飲料 400ml*6入"},
-            {"條碼": "4710079020118", "品名": "生活運動飲料 400ml"},
-            {"條碼": "4710088512550", "品名": "科學麵mini包"}
-        ];
-
-        // 轉成條碼查詢用的物件
-        const productMap = {};
-        products.forEach(p => {
-            productMap[p["條碼"]] = p["品名"];
-        });
-
+        let productMap = {};
         let restockData = JSON.parse(localStorage.getItem('restockData')) || [];
-        let codeReader = null; // ZXing 的掃描器實例
+        let codeReader = null;
 
-        // 初始化顯示補貨列表
-        updateRestockList();
+        async function loadProducts() {
+            try {
+                const response = await fetch('products.json');
+                const products = await response.json();
+                products.forEach(p => {
+                    productMap[p["條碼"]] = p["品名"];
+                });
+                localStorage.setItem('products', JSON.stringify(productMap));
+            } catch (error) {
+                console.error('載入商品資料失敗:', error);
+                alert('無法載入商品資料');
+            }
+        }
+
+        loadProducts().then(() => updateRestockList());
 
         function switchToInput() {
             document.getElementById('main-layer').style.display = 'none';
@@ -94,19 +98,18 @@
             document.getElementById('input-layer').style.display = 'none';
             document.getElementById('main-layer').style.display = 'block';
             if (codeReader) {
-                codeReader.reset(); // 停止掃描
+                codeReader.reset();
             }
         }
 
         function startScanner() {
-            console.log('按下了掃描條碼');
             codeReader = new ZXing.BrowserMultiFormatReader();
             codeReader.decodeFromVideoDevice(null, 'scanner', (result, err) => {
                 if (result) {
                     const barcode = result.text;
                     document.getElementById('barcode-result').innerText = barcode;
                     document.getElementById('product-name').innerText = productMap[barcode] || '未知商品';
-                    codeReader.reset(); // 掃到後停止
+                    codeReader.reset();
                 }
                 if (err && !(err instanceof ZXing.NotFoundException)) {
                     alert('掃描失敗: ' + err);
@@ -114,6 +117,17 @@
             }).catch(err => {
                 alert('啟動相機失敗: ' + err);
             });
+        }
+
+        function manualInput() {
+            const barcode = document.getElementById('manual-barcode').value;
+            if (barcode) {
+                document.getElementById('barcode-result').innerText = barcode;
+                document.getElementById('product-name').innerText = productMap[barcode] || '未知商品';
+                document.getElementById('manual-barcode').value = '';
+            } else {
+                alert('請輸入條碼！');
+            }
         }
 
         function saveData() {
@@ -128,7 +142,7 @@
                 updateRestockList();
                 switchToMain();
             } else {
-                alert('請掃描條碼並輸入數量！');
+                alert('請掃描或輸入條碼並填入數量！');
             }
         }
 
