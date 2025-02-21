@@ -59,14 +59,13 @@
         <button onclick="startScanner()">掃描條碼</button>
         <p>或手動輸入：
             <input type="text" id="manual-barcode" placeholder="輸入條碼">
-            <input type="text" id="manual-name" placeholder="輸入品名（若不在資料庫）">
             <button onclick="manualInput()">確認</button>
         </p>
         <div id="scanner-container">
             <video id="scanner"></video>
         </div>
         <p>條碼：<span id="barcode-result"></span></p>
-        <p>品名：<span id="product-name"></span></p>
+        <p>品名：<input type="text" id="product-name" placeholder="輸入品名（可編輯）"></p>
         <p>
             數量：<input type="number" id="quantity" min="0" placeholder="輸入數量">
             單位：<select id="unit">
@@ -104,11 +103,10 @@
             document.getElementById('main-layer').style.display = 'none';
             document.getElementById('input-layer').style.display = 'block';
             document.getElementById('barcode-result').innerText = '';
-            document.getElementById('product-name').innerText = '';
+            document.getElementById('product-name').value = ''; // 清空品名輸入框
             document.getElementById('quantity').value = '';
-            document.getElementById('unit').value = '個'; // 預設單位改為「個」
+            document.getElementById('unit').value = '個';
             document.getElementById('manual-barcode').value = '';
-            document.getElementById('manual-name').value = '';
         }
 
         function switchToMain() {
@@ -127,7 +125,7 @@
                 if (result) {
                     const barcode = result.text;
                     document.getElementById('barcode-result').innerText = barcode;
-                    document.getElementById('product-name').innerText = productMap[barcode] || '未知商品';
+                    document.getElementById('product-name').value = productMap[barcode] || '未知商品';
                     codeReader.reset();
                 }
                 if (err && !(err instanceof ZXing.NotFoundException)) {
@@ -140,10 +138,9 @@
 
         function manualInput() {
             const barcode = document.getElementById('manual-barcode').value;
-            const manualName = document.getElementById('manual-name').value;
             if (barcode) {
                 document.getElementById('barcode-result').innerText = barcode;
-                document.getElementById('product-name').innerText = manualName || productMap[barcode] || '未知商品';
+                document.getElementById('product-name').value = productMap[barcode] || '未知商品';
             } else {
                 alert('請輸入條碼！');
             }
@@ -151,16 +148,16 @@
 
         function saveData() {
             const barcode = document.getElementById('barcode-result').innerText;
-            const name = document.getElementById('product-name').innerText;
+            const name = document.getElementById('product-name').value; // 直接用輸入框的值
             const quantity = document.getElementById('quantity').value;
             const unit = document.getElementById('unit').value;
 
-            if (barcode && quantity) {
+            if (barcode && quantity && name) {
                 restockData.push({ barcode, name, quantity, unit });
                 localStorage.setItem('restockData', JSON.stringify(restockData));
                 switchToMain();
             } else {
-                alert('請掃描或輸入條碼並填入數量！');
+                alert('請輸入條碼、品名和數量！');
             }
         }
 
