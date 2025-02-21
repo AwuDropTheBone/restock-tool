@@ -15,14 +15,13 @@
             max-width: 90vw;
             border-collapse: collapse;
             margin-top: 2vh;
-            overflow-x: auto;
-            display: block;
+            table-layout: fixed; /* 固定佈局，平均分配欄寬 */
         }
         th, td {
             border: 1px solid #ddd;
             padding: 1vh 1vw;
             text-align: left;
-            white-space: nowrap;
+            word-break: break-word; /* 自動換行 */
         }
         tr { height: 8vh; }
         button {
@@ -112,7 +111,7 @@
             if (codeReader) {
                 codeReader.reset();
             }
-            updateRestockList(); // 切換時更新顯示
+            updateRestockList();
         }
 
         function startScanner() {
@@ -172,8 +171,6 @@
                 `;
                 tbody.appendChild(row);
             });
-            const table = tbody.parentElement;
-            table.style.width = '100%'; // 確保寬度適應
         }
 
         function deleteItem(index) {
