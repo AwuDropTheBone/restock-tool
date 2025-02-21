@@ -57,8 +57,11 @@
     <div id="input-layer">
         <h1>輸入補貨資料</h1>
         <button onclick="startScanner()">掃描條碼</button>
-        <p>或手動輸入：<input type="text" id="manual-barcode" placeholder="輸入條碼">
-        <button onclick="manualInput()">確認</button></p>
+        <p>或手動輸入：
+            <input type="text" id="manual-barcode" placeholder="輸入條碼">
+            <input type="text" id="manual-name" placeholder="輸入品名（若不在資料庫）">
+            <button onclick="manualInput()">確認</button>
+        </p>
         <div id="scanner-container">
             <video id="scanner"></video>
         </div>
@@ -103,6 +106,9 @@
             document.getElementById('barcode-result').innerText = '';
             document.getElementById('product-name').innerText = '';
             document.getElementById('quantity').value = '';
+            document.getElementById('unit').value = '瓶';
+            document.getElementById('manual-barcode').value = ''; // 清空手動輸入
+            document.getElementById('manual-name').value = '';   // 清空手動名稱
         }
 
         function switchToMain() {
@@ -112,7 +118,7 @@
                 codeReader.reset();
             }
             updateRestockList();
-            window.scrollTo(0, 0); // 自動滾動到頂部
+            window.scrollTo(0, 0);
         }
 
         function startScanner() {
@@ -134,10 +140,10 @@
 
         function manualInput() {
             const barcode = document.getElementById('manual-barcode').value;
+            const manualName = document.getElementById('manual-name').value;
             if (barcode) {
                 document.getElementById('barcode-result').innerText = barcode;
-                document.getElementById('product-name').innerText = productMap[barcode] || '未知商品';
-                document.getElementById('manual-barcode').value = '';
+                document.getElementById('product-name').innerText = manualName || productMap[barcode] || '未知商品';
             } else {
                 alert('請輸入條碼！');
             }
