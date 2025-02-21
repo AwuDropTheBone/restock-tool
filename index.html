@@ -104,9 +104,10 @@
             }, function(err) {
                 if (err) {
                     console.log(err);
-                    alert('無法啟動相機，請確認權限或瀏覽器支援');
+                    alert('啟動相機失敗: ' + err.message); // 加錯誤提示
                     return;
                 }
+                alert('相機啟動成功，請掃描條碼');
                 Quagga.start();
             });
 
