@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>抄貨小工具</title>
-    <script src="https://cdn.jsdelivr.net/npm/quaggajs@0.12.1/dist/quagga.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         #main-layer, #input-layer { max-width: 500px; margin: auto; }
@@ -92,32 +92,19 @@
         }
 
         function startScanner() {
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#scanner-container')
-                },
-                decoder: {
-                    readers: ["ean_reader", "upc_reader"] // 支援 EAN/UPC 條碼
+            const codeReader = new ZXing.BrowserMultiFormatReader();
+            codeReader.decodeFromVideoDevice(null, 'scanner', (result, err) => {
+                if (result) {
+                    const barcode = result.text;
+                    document.getElementById('barcode-result').innerText = barcode;
+                    document.getElementById('product-name').innerText = productMap[barcode] || '未知商品';
+                    codeReader.reset(); // 停止掃描
                 }
-            }, function(err) {
-                if (err) {
-                    console.log(err);
-                    alert('啟動相機失敗: ' + err.message); // 加錯誤提示
-                    return;
-                }
-                alert('相機啟動成功，請掃描條碼');
-                Quagga.start();
-            });
-
-            Quagga.onDetected(function(data) {
-                const barcode = data.codeResult.code;
-                document.getElementById('barcode-result').innerText = barcode;
-                document.getElementById('product-name').innerText = productMap[barcode] || '未知商品';
-                Quagga.stop();
-            });
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+            alert('掃描失敗: ' + err);
         }
+    });
+}
 
         function saveData() {
             const barcode = document.getElementById('barcode-result').innerText;
