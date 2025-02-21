@@ -10,8 +10,20 @@
         #input-layer { display: none; }
         #scanner-container { width: 100%; max-width: 80vw; }
         video { width: 100%; }
-        table { width: 100%; border-collapse: collapse; margin-top: 2vh; }
-        th, td { border: 1px solid #ddd; padding: 1vh 1vw; text-align: left; }
+        table {
+            width: 100%;
+            max-width: 90vw;
+            border-collapse: collapse;
+            margin-top: 2vh;
+            overflow-x: auto;
+            display: block;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 1vh 1vw;
+            text-align: left;
+            white-space: nowrap;
+        }
         tr { height: 8vh; }
         button {
             padding: 2vh 3vw; margin: 1vh; font-size: 4vw;
@@ -100,6 +112,7 @@
             if (codeReader) {
                 codeReader.reset();
             }
+            updateRestockList(); // 切換時更新顯示
         }
 
         function startScanner() {
@@ -139,7 +152,6 @@
             if (barcode && quantity) {
                 restockData.push({ barcode, name, quantity, unit });
                 localStorage.setItem('restockData', JSON.stringify(restockData));
-                updateRestockList();
                 switchToMain();
             } else {
                 alert('請掃描或輸入條碼並填入數量！');
@@ -160,12 +172,16 @@
                 `;
                 tbody.appendChild(row);
             });
+            const table = tbody.parentElement;
+            table.style.width = '100%'; // 確保寬度適應
         }
 
         function deleteItem(index) {
-            restockData.splice(index, 1);
-            localStorage.setItem('restockData', JSON.stringify(restockData));
-            updateRestockList();
+            if (confirm('是否確認刪除這筆資料？')) {
+                restockData.splice(index, 1);
+                localStorage.setItem('restockData', JSON.stringify(restockData));
+                updateRestockList();
+            }
         }
 
         function clearData() {
