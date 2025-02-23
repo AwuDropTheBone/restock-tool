@@ -33,6 +33,7 @@
         select { padding: 1vh; font-size: 3vw; }
         .delete-btn { background-color: #ff4444; padding: 1vh 2vw; }
         .delete-btn:hover { background-color: #cc0000; }
+        #unknown-hint { color: #888; font-size: 3vw; margin-left: 1vw; display: none; } /* 提示樣式 */
     </style>
 </head>
 <body>
@@ -65,7 +66,8 @@
             <video id="scanner"></video>
         </div>
         <p>條碼：<span id="barcode-result"></span></p>
-        <p>品名：<input type="text" id="product-name" placeholder="輸入品名（可編輯）"></p>
+        <p>品名：<input type="text" id="product-name" placeholder="輸入品名"> 
+            <span id="unknown-hint">未知商品</span></p>
         <p>
             數量：<input type="number" id="quantity" min="0" placeholder="輸入數量">
             單位：<select id="unit">
@@ -103,10 +105,11 @@
             document.getElementById('main-layer').style.display = 'none';
             document.getElementById('input-layer').style.display = 'block';
             document.getElementById('barcode-result').innerText = '';
-            document.getElementById('product-name').value = ''; // 清空品名輸入框
+            document.getElementById('product-name').value = '';
             document.getElementById('quantity').value = '';
             document.getElementById('unit').value = '個';
             document.getElementById('manual-barcode').value = '';
+            document.getElementById('unknown-hint').style.display = 'none'; // 隱藏提示
         }
 
         function switchToMain() {
@@ -125,7 +128,9 @@
                 if (result) {
                     const barcode = result.text;
                     document.getElementById('barcode-result').innerText = barcode;
-                    document.getElementById('product-name').value = productMap[barcode] || '未知商品';
+                    const productName = productMap[barcode];
+                    document.getElementById('product-name').value = productName || '';
+                    document.getElementById('unknown-hint').style.display = productName ? 'none' : 'inline'; // 顯示或隱藏提示
                     codeReader.reset();
                 }
                 if (err && !(err instanceof ZXing.NotFoundException)) {
@@ -140,7 +145,9 @@
             const barcode = document.getElementById('manual-barcode').value;
             if (barcode) {
                 document.getElementById('barcode-result').innerText = barcode;
-                document.getElementById('product-name').value = productMap[barcode] || '未知商品';
+                const productName = productMap[barcode];
+                document.getElementById('product-name').value = productName || '';
+                document.getElementById('unknown-hint').style.display = productName ? 'none' : 'inline'; // 顯示或隱藏提示
             } else {
                 alert('請輸入條碼！');
             }
@@ -148,7 +155,7 @@
 
         function saveData() {
             const barcode = document.getElementById('barcode-result').innerText;
-            const name = document.getElementById('product-name').value; // 直接用輸入框的值
+            const name = document.getElementById('product-name').value;
             const quantity = document.getElementById('quantity').value;
             const unit = document.getElementById('unit').value;
 
