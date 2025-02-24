@@ -29,7 +29,7 @@
             background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;
         }
         button:hover { background-color: #45a049; }
-        input[type="number"], input[type="text"] { width: 20vw; padding: 1vh; font-size: 3vw; }
+        input[type="text"] { width: 20vw; padding: 1vh; font-size: 3vw; }
         select { padding: 1vh; font-size: 3vw; }
         .delete-btn { background-color: #ff4444; padding: 1vh 2vw; }
         .delete-btn:hover { background-color: #cc0000; }
@@ -69,7 +69,7 @@
         <p>品名：<input type="text" id="product-name" placeholder="輸入品名"> 
             <span id="unknown-hint">未知商品</span></p>
         <p>
-            數量：<input type="number" id="quantity" min="0" placeholder="輸入數量">
+            數量：<input type="text" id="quantity" placeholder="輸入數量" inputmode="numeric" pattern="[0-9]*" min="0">
             單位：<select id="unit">
                 <option value="個">個</option>
                 <option value="包">包</option>
@@ -159,12 +159,12 @@
             const quantity = document.getElementById('quantity').value;
             const unit = document.getElementById('unit').value;
 
-            if (barcode && quantity && name) {
-                restockData.push({ barcode, name, quantity, unit });
+            if (barcode && name && quantity && /^\d+$/.test(quantity) && parseInt(quantity) >= 0) {
+                restockData.push({ barcode, name, quantity: parseInt(quantity), unit });
                 localStorage.setItem('restockData', JSON.stringify(restockData));
                 switchToMain();
             } else {
-                alert('請輸入條碼、品名和數量！');
+                alert('請輸入條碼、品名和有效數量（正整數）！');
             }
         }
 
