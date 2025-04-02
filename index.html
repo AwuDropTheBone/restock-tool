@@ -8,7 +8,7 @@
         body { font-family: Arial, sans-serif; margin: 2vw; }
         #main-layer, #input-layer { max-width: 90vw; margin: auto; }
         #input-layer { display: none; }
-        #scanner-container { width: 100%; max-width: 80vw; }
+        #scanner-container { width: 100%; max-width: 80vw; position: relative; }
         video { width: 100%; }
         table {
             width: 100%;
@@ -29,11 +29,13 @@
             background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;
         }
         button:hover { background-color: #45a049; }
-        input[type="text"] { width: 20vw; padding: 1vh; font-size: 3vw; }
+        input[type="number"], input[type="text"] { width: 20vw; padding: 1vh; font-size: 3vw; }
         select { padding: 1vh; font-size: 3vw; }
         .delete-btn { background-color: #ff4444; padding: 1vh 2vw; }
         .delete-btn:hover { background-color: #cc0000; }
         #unknown-hint { color: #888; font-size: 3vw; margin-left: 1vw; display: none; }
+        #scan-tip { color: #ff4444; font-size: 3vw; margin: 1vh 0; }
+        #zoom-control { margin: 1vh 0; }
     </style>
 </head>
 <body>
@@ -59,17 +61,22 @@
         <h1>輸入補貨資料</h1>
         <button onclick="startScanner()">掃描條碼</button>
         <p>或手動輸入：
-            <input type="text" id="manual-barcode" placeholder="輸入條碼" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" id="manual-barcode" placeholder="輸入條碼">
             <button onclick="manualInput()">確認</button>
         </p>
         <div id="scanner-container">
             <video id="scanner"></video>
+            <p id="scan-tip">請保持 20-30 公分距離掃描小型條碼</p>
+            <div id="zoom-control">
+                <button onclick="adjustZoom(0.1)">放大 (+)</button>
+                <button onclick="adjustZoom(-0.1)">縮小 (-)</button>
+            </div>
         </div>
         <p>條碼：<span id="barcode-result"></span></p>
         <p>品名：<input type="text" id="product-name" placeholder="輸入品名"> 
             <span id="unknown-hint">未知商品</span></p>
         <p>
-            數量：<input type="text" id="quantity" placeholder="輸入數量" inputmode="numeric" pattern="[0-9]*" min="0">
+            數量：<input type="number" id="quantity" min="0" placeholder="輸入數量">
             單位：<select id="unit">
                 <option value="個">個</option>
                 <option value="包">包</option>
@@ -84,6 +91,7 @@
         let productMap = {};
         let restockData = JSON.parse(localStorage.getItem('restockData')) || [];
         let codeReader = null;
+        let zoomLevel = 1.0; // 初始縮放比例
 
         async function loadProducts() {
             try {
@@ -110,6 +118,8 @@
             document.getElementById('unit').value = '個';
             document.getElementById('manual-barcode').value = '';
             document.getElementById('unknown-hint').style.display = 'none';
+            zoomLevel = 1.0; // 重置縮放
+            updateZoom();
         }
 
         function switchToMain() {
@@ -134,11 +144,29 @@
                     codeReader.reset();
                 }
                 if (err && !(err instanceof ZXing.NotFoundException)) {
-                    alert('掃描失敗: ' + err);
+                    alert('掃描失敗: 請調整距離（20-30 公分）或光線後重試');
                 }
+            }, {
+                // 設置解碼提示，優化小型條碼掃描
+                hints: new Map([
+                    [ZXing.DecodeHintType.TRY_HARDER, true], // 更努力嘗試解碼
+                    [ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.CODE_128]] // 指定常見格式
+                ])
             }).catch(err => {
                 alert('啟動相機失敗: ' + err);
             });
+            updateZoom();
+        }
+
+        function adjustZoom(delta) {
+            zoomLevel = Math.max(1.0, Math.min(zoomLevel + delta, 3.0)); // 限制縮放範圍 1x-3x
+            updateZoom();
+        }
+
+        function updateZoom() {
+            const video = document.getElementById('scanner');
+            video.style.transform = `scale(${zoomLevel})`;
+            video.style.transformOrigin = 'center center';
         }
 
         function manualInput() {
@@ -159,12 +187,12 @@
             const quantity = document.getElementById('quantity').value;
             const unit = document.getElementById('unit').value;
 
-            if (barcode && name && quantity && /^\d+$/.test(quantity) && parseInt(quantity) >= 0) {
-                restockData.push({ barcode, name, quantity: parseInt(quantity), unit });
+            if (barcode && quantity && name) {
+                restockData.push({ barcode, name, quantity, unit });
                 localStorage.setItem('restockData', JSON.stringify(restockData));
                 switchToMain();
             } else {
-                alert('請輸入條碼、品名和有效數量（正整數）！');
+                alert('請輸入條碼、品名和數量！');
             }
         }
 
